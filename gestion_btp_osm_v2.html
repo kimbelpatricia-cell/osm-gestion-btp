@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSM — Gestion BTP (Notion Live)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F7F5F0;--surface:#FFF;--surface2:#F0EDE6;--border:#E2DDD4;
+  --text:#1A1814;--text2:#7A7468;--text3:#A8A29A;
+  --green:#1D9E75;--green-light:#E1F5EE;--green-dark:#0F6E56;
+  --amber:#D97706;--amber-light:#FEF3C7;
+  --red:#DC2626;--red-light:#FEE2E2;
+  --blue:#2563EB;--blue-light:#EFF6FF;
+  --radius:10px;--radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+.main{margin-left:220px;flex:1;padding:32px}
+.brand{padding:0 20px 28px}
+.brand-name{font-size:17px;font-weight:600;letter-spacing:-0.3px;display:flex;align-items:center;gap:8px}
+.brand-dot{width:8px;height:8px;background:var(--green);border-radius:50%;flex-shrink:0}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.06em}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--green-dark);background:var(--green-light);padding:3px 8px;border-radius:20px;margin-top:6px}
+.sync-dot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.nav-section{padding:0 12px;margin-bottom:4px}
+.nav-label{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:0 8px;margin-bottom:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13.5px;transition:all 0.12s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--green-light);color:var(--green-dark);font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.page{display:none}
+.page.active{display:block}
+.page-header{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-0.4px}
+.page-sub{font-size:13px;color:var(--text2);margin-top:4px}
+.btn-refresh{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.12s}
+.btn-refresh:hover{background:var(--surface2);color:var(--text)}
+.btn-refresh svg{width:13px;height:13px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
+.kpi.accent{border-top:3px solid var(--green)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:600;letter-spacing:-0.5px;font-family:'DM Mono',monospace}
+.kpi-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.card-title{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:14px}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 16px;text-align:left;font-size:11px;font-weight:500;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.06em}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFAF8}
+.mono{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%}
+.b-green{background:var(--green-light);color:var(--green-dark)}.b-green::before{background:var(--green)}
+.b-orange{background:var(--amber-light);color:#92400E}.b-orange::before{background:var(--amber)}
+.b-red{background:var(--red-light);color:#991B1B}.b-red::before{background:var(--red)}
+.b-blue{background:var(--blue-light);color:#1E40AF}.b-blue::before{background:var(--blue)}
+.b-gray{background:var(--surface2);color:var(--text2)}.b-gray::before{background:var(--text3)}
+.loading{display:flex;align-items:center;gap:10px;padding:30px 20px;color:var(--text3);font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:30px 20px;text-align:center;color:var(--text3);font-size:13px}
+.error-box{background:var(--red-light);border:1px solid #FECACA;border-radius:var(--radius);padding:14px 18px;font-size:13px;color:#991B1B;margin-bottom:20px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.filters{display:flex;gap:6px}
+.filter-btn{padding:6px 14px;border-radius:8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.12s}
+.filter-btn:hover,.filter-btn.active{background:var(--green-light);color:var(--green-dark);border-color:#9FE1CB}
+.count-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text2);border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;padding:1px 7px;margin-left:4px}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{background:#E8E4DC;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-name"><span class="brand-dot"></span>OSM</div>
+      <div class="brand-sub">Gestion BTP</div>
+      <div class="sync-badge"><span class="sync-dot"></span>Notion Live</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Tableau de bord
+      </button>
+      <button class="nav-item" onclick="showPage('devis',this);loadDevis()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        Devis <span class="count-badge" id="count-devis">—</span>
+      </button>
+      <button class="nav-item" onclick="showPage('factures',this);loadFactures()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 14l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Factures <span class="count-badge" id="count-factures">—</span>
+      </button>
+      <button class="nav-item" onclick="showPage('chantiers',this);loadChantiers()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 20h20M6 20V10M12 20V4M18 20v-6"/></svg>
+        Chantiers <span class="count-badge" id="count-chantiers">—</span>
+      </button>
+    </div>
+    <div class="sidebar-footer">OSM — Puteaux<br>Connecté à Notion</div>
+  </nav>
+
+  <main class="main">
+
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div><div class="page-title">Tableau de bord</div><div class="page-sub" id="dash-date"></div></div>
+        <button class="btn-refresh" onclick="loadAll()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi accent"><div class="kpi-label">Devis total</div><div class="kpi-value" id="kpi-devis">—</div><div class="kpi-sub" id="kpi-devis-sub">—</div></div>
+        <div class="kpi"><div class="kpi-label">Devis acceptés</div><div class="kpi-value" id="kpi-acceptes">—</div><div class="kpi-sub" id="kpi-acceptes-sub">—</div></div>
+        <div class="kpi"><div class="kpi-label">Factures émises</div><div class="kpi-value" id="kpi-factures">—</div><div class="kpi-sub" id="kpi-factures-sub">—</div></div>
+        <div class="kpi"><div class="kpi-label">Chantiers</div><div class="kpi-value" id="kpi-chantiers">—</div><div class="kpi-sub" id="kpi-chantiers-sub">—</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Derniers devis</div><div id="dash-devis"><div class="loading"><span class="spinner"></span>Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Dernières factures</div><div id="dash-factures"><div class="loading"><span class="spinner"></span>Chargement...</div></div></div>
+      </div>
+    </div>
+
+    <div id="page-devis" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Devis</div><div class="page-sub">Toutes les données depuis Notion</div></div>
+        <button class="btn-refresh" onclick="loadDevis()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" onclick="filterRows('devis-tbody','',this)">Tous</button>
+          <button class="filter-btn" onclick="filterRows('devis-tbody','accept',this)">Acceptés</button>
+          <button class="filter-btn" onclick="filterRows('devis-tbody','attente',this)">En attente</button>
+          <button class="filter-btn" onclick="filterRows('devis-tbody','refus',this)">Refusés</button>
+        </div>
+      </div>
+      <div id="devis-container"><div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div></div>
+    </div>
+
+    <div id="page-factures" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Factures</div><div class="page-sub">Toutes les données depuis Notion</div></div>
+        <button class="btn-refresh" onclick="loadFactures()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" onclick="filterRows('factures-tbody','',this)">Toutes</button>
+          <button class="filter-btn" onclick="filterRows('factures-tbody','encaiss|payé',this)">Encaissées</button>
+          <button class="filter-btn" onclick="filterRows('factures-tbody','impay|attente',this)">Impayées</button>
+        </div>
+      </div>
+      <div id="factures-container"><div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div></div>
+    </div>
+
+    <div id="page-chantiers" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Chantiers</div><div class="page-sub">Toutes les données depuis Notion</div></div>
+        <button class="btn-refresh" onclick="loadChantiers()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div id="chantiers-container"><div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const DB_DEVIS = '33ea6e36-fcce-8053-a830-c98e18efe69a';
+const DB_FACTURES = '33ea6e36-fcce-8077-beeb-da6c548592ed';
+const DB_CHANTIERS = '33ea6e36-fcce-80f3-9a76-d1dae6b2e476';
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  return new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+}
+
+function getText(prop) {
+  if (!prop) return '';
+  if (prop.type === 'title') return prop.title?.map(t => t.plain_text).join('') || '';
+  if (prop.type === 'rich_text') return prop.rich_text?.map(t => t.plain_text).join('') || '';
+  if (prop.type === 'text') return prop.rich_text?.map(t => t.plain_text).join('') || '';
+  if (prop.type === 'select') return prop.select?.name || '';
+  if (prop.type === 'multi_select') return prop.multi_select?.map(s => s.name).join(', ') || '';
+  if (prop.type === 'number') return prop.number ?? '';
+  if (prop.type === 'date') return prop.date?.start ? prop.date.start.substring(0,10) : '';
+  if (prop.type === 'checkbox') return prop.checkbox ? 'Oui' : 'Non';
+  if (prop.type === 'formula') {
+    const f = prop.formula;
+    if (f?.type === 'string') return f.string || '';
+    if (f?.type === 'number') return f.number ?? '';
+  }
+  if (prop.type === 'rollup') {
+    const r = prop.rollup;
+    if (r?.type === 'number') return r.number ?? '';
+    if (r?.type === 'array') return r.array?.map(a => getText(a)).join(', ') || '';
+  }
+  if (prop.type === 'relation') return prop.relation?.length ? prop.relation.length + ' lié(s)' : '';
+  return '';
+}
+
+function statusBadge(s) {
+  if (!s) return '<span class="badge b-gray">—</span>';
+  s = s.toString();
+  if (/accept|valid|encaiss|payé|terminé|livré|réglé/i.test(s)) return `<span class="badge b-green">${s}</span>`;
+  if (/attente|cours|progress|ouvert|envoy/i.test(s)) return `<span class="badge b-orange">${s}</span>`;
+  if (/refus|annul|impay|retard|rejet/i.test(s)) return `<span class="badge b-red">${s}</span>`;
+  return `<span class="badge b-gray">${s}</span>`;
+}
+
+function filterRows(tbodyId, keyword, btn) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const re = keyword ? new RegExp(keyword, 'i') : null;
+  tbody.querySelectorAll('tr').forEach(row => {
+    row.style.display = (!re || re.test(row.textContent)) ? '' : 'none';
+  });
+  btn.closest('.filters').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function getPageTitle(pageId) {
+  try {
+    const res = await fetch(`/notion/pages/${pageId}`);
+    if (!res.ok) return '—';
+    const data = await res.json();
+    const props = data.properties || {};
+    const titleProp = Object.values(props).find(p => p.type === 'title');
+    return titleProp?.title?.map(t => t.plain_text).join('') || '—';
+  } catch(e) { return '—'; }
+}
+
+async function resolveRelations(rows, colName) {
+  const allIds = [];
+  rows.forEach(r => {
+    const prop = r.properties[colName];
+    if (prop?.type === 'relation') prop.relation.forEach(rel => allIds.push(rel.id));
+  });
+  const uniqueIds = [...new Set(allIds)];
+  const nameMap = {};
+  await Promise.all(uniqueIds.map(async id => {
+    nameMap[id] = await getPageTitle(id);
+  }));
+  return nameMap;
+}
+
+async function notionQuery(dbId, pageSize = 100) {
+  const res = await fetch(`/notion/databases/${dbId}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page_size: pageSize, sorts: [{ timestamp: 'created_time', direction: 'descending' }] })
+  });
+  if (!res.ok) throw new Error('Erreur serveur ' + res.status);
+  return res.json();
+}
+
+let sortState = {};
+
+function renderRow(r, cols) {
+  return `<tr>${cols.map(c => {
+    const prop = r.properties[c];
+    const v = getText(prop);
+    const isStatus = /statut|état|status|phase/i.test(c);
+    const isMoney = /montant|prix|ht|ttc|total|ca\b/i.test(c) && typeof v === 'number';
+    if (isStatus) return `<td>${statusBadge(v)}</td>`;
+    if (isMoney) return `<td class="mono">${fmt(v)}</td>`;
+    if (typeof v === 'number') return `<td class="mono">${v.toLocaleString('fr-FR')} €</td>`;
+    return `<td title="${v}">${v || '—'}</td>`;
+  }).join('')}</tr>`;
+}
+
+function buildTable(rows, tbodyId, maxCols = 7) {
+  if (!rows.length) return '<div class="empty">Aucune donnée trouvée dans Notion.</div>';
+  const allCols = Object.keys(rows[0].properties);
+  const skipTypes = ['relation','rollup','formula','files','people','created_by','last_edited_by'];
+  const FACTURES_COLS = ['N° Facture','CHANTIERS','DEVIS','Date Facture','Montant HT','Montant TTC','Statut','% Avancement cumulé'];
+  let cols;
+  if (tbodyId === 'factures-tbody') {
+    cols = FACTURES_COLS.filter(c => allCols.includes(c));
+    const remaining = allCols.filter(c => !FACTURES_COLS.includes(c) && !skipTypes.includes(rows[0].properties[c]?.type));
+    cols = [...cols, ...remaining].slice(0, 8);
+  } else {
+    let allFiltered = allCols.filter(c => !skipTypes.includes(rows[0].properties[c].type));
+    const titleCol = allFiltered.find(c => rows[0].properties[c].type === 'title');
+    const statusCol = allFiltered.find(c => /^statut$|^état$|^status$/i.test(c));
+    allFiltered = allFiltered.filter(c => c !== titleCol && c !== statusCol);
+    if (titleCol) allFiltered = [titleCol, ...allFiltered];
+    if (statusCol) allFiltered = [allFiltered[0], statusCol, ...allFiltered.slice(1)];
+    cols = allFiltered.slice(0, maxCols);
+  }
+  sortState[tbodyId] = { rows: [...rows], cols, dir: {} };
+  return `<div class="table-wrap"><table>
+    <thead><tr>${cols.map((c,i) => `<th class="sortable" onclick="sortTable('${tbodyId}',${i},'${c}')">${c} <span id="sort-${tbodyId}-${i}" style="color:var(--text3);font-size:10px">⇅</span></th>`).join('')}</tr></thead>
+    <tbody id="${tbodyId}">${rows.map(r => renderRow(r, cols)).join('')}</tbody>
+  </table></div>`;
+}
+
+function sortTable(tbodyId, colIndex, colName) {
+  const state = sortState[tbodyId];
+  if (!state) return;
+  const dir = state.dir[colName] === 'asc' ? 'desc' : 'asc';
+  state.dir[colName] = dir;
+  const sorted = [...state.rows].sort((a, b) => {
+    const va = getText(a.properties[colName]) ?? '';
+    const vb = getText(b.properties[colName]) ?? '';
+    if (typeof va === 'number' && typeof vb === 'number') return dir === 'asc' ? va - vb : vb - va;
+    return dir === 'asc' ? String(va).localeCompare(String(vb),'fr') : String(vb).localeCompare(String(va),'fr');
+  });
+  document.getElementById(tbodyId).innerHTML = sorted.map(r => renderRow(r, state.cols)).join('');
+  document.querySelectorAll(`[id^="sort-${tbodyId}-"]`).forEach(el => el.textContent = '⇅');
+  const icon = document.getElementById(`sort-${tbodyId}-${colIndex}`);
+  if (icon) icon.textContent = dir === 'asc' ? ' ↑' : ' ↓';
+}
+
+async function loadDevis() {
+  const el = document.getElementById('devis-container');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div>';
+  try {
+    const data = await notionQuery(DB_DEVIS);
+    const rows = data.results || [];
+    el.innerHTML = buildTable(rows, 'devis-tbody');
+    document.getElementById('kpi-devis').textContent = rows.length;
+    document.getElementById('kpi-devis-sub').textContent = rows.length + ' devis au total';
+    document.getElementById('count-devis').textContent = rows.length;
+    const acc = rows.filter(r => Object.values(r.properties).some(p => /accept/i.test(getText(p))));
+    document.getElementById('kpi-acceptes').textContent = acc.length;
+    document.getElementById('kpi-acceptes-sub').textContent = acc.length + ' acceptés';
+  } catch(e) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur de connexion</strong>${e.message}</div>`;
+  }
+}
+
+async function loadFactures() {
+  const el = document.getElementById('factures-container');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div>';
+  try {
+    const data = await notionQuery(DB_FACTURES);
+    const rows = data.results || [];
+    // Résoudre les noms de chantiers et devis liés
+    const chantierMap = await resolveRelations(rows, 'CHANTIERS');
+    const devisMap = await resolveRelations(rows, 'DEVIS');
+    rows.forEach(r => {
+      const propC = r.properties['CHANTIERS'];
+      if (propC?.type === 'relation' && propC.relation.length > 0) {
+        const noms = propC.relation.map(rel => chantierMap[rel.id] || '—').join(', ');
+        r.properties['CHANTIERS'] = { type: 'rich_text', rich_text: [{ plain_text: noms }] };
+      }
+      const propD = r.properties['DEVIS'];
+      if (propD?.type === 'relation' && propD.relation.length > 0) {
+        const noms = propD.relation.map(rel => devisMap[rel.id] || '—').join(', ');
+        r.properties['DEVIS'] = { type: 'rich_text', rich_text: [{ plain_text: noms }] };
+      }
+    });
+    el.innerHTML = buildTable(rows, 'factures-tbody');
+    document.getElementById('kpi-factures').textContent = rows.length;
+    document.getElementById('kpi-factures-sub').textContent = rows.length + ' factures';
+    document.getElementById('count-factures').textContent = rows.length;
+  } catch(e) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur de connexion</strong>${e.message}</div>`;
+  }
+}
+
+async function loadChantiers() {
+  const el = document.getElementById('chantiers-container');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Chargement depuis Notion...</div>';
+  try {
+    const data = await notionQuery(DB_CHANTIERS);
+    const rows = data.results || [];
+    el.innerHTML = buildTable(rows, 'chantiers-tbody');
+    document.getElementById('kpi-chantiers').textContent = rows.length;
+    document.getElementById('kpi-chantiers-sub').textContent = rows.length + ' chantiers';
+    document.getElementById('count-chantiers').textContent = rows.length;
+  } catch(e) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur de connexion</strong>${e.message}</div>`;
+  }
+}
+
+async function loadDashDevis() {
+  const el = document.getElementById('dash-devis');
+  try {
+    const data = await notionQuery(DB_DEVIS, 5);
+    const rows = data.results || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">Aucun devis.</div>'; return; }
+    const titleProp = Object.keys(rows[0].properties).find(c => rows[0].properties[c].type === 'title');
+    const statusProp = Object.keys(rows[0].properties).find(c => /statut|état/i.test(c));
+    const mntProp = Object.keys(rows[0].properties).find(c => /montant|total|ht/i.test(c));
+    el.innerHTML = `<table style="width:100%">
+      <thead><tr><th>Nom</th>${mntProp?'<th>Montant</th>':''}${statusProp?'<th>Statut</th>':''}</tr></thead>
+      <tbody>${rows.map(r => {
+        const p = r.properties;
+        const nom = titleProp ? getText(p[titleProp]) : '—';
+        const mnt = mntProp ? getText(p[mntProp]) : null;
+        const stat = statusProp ? getText(p[statusProp]) : null;
+        return `<tr>
+          <td>${nom}</td>
+          ${mntProp ? `<td class="mono">${typeof mnt==='number'?fmt(mnt):(mnt||'—')}</td>` : ''}
+          ${statusProp ? `<td>${statusBadge(stat)}</td>` : ''}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+    document.getElementById('kpi-devis').textContent = rows.length;
+    document.getElementById('count-devis').textContent = rows.length;
+  } catch(e) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur</strong>${e.message}</div>`;
+  }
+}
+
+async function loadDashFactures() {
+  const el = document.getElementById('dash-factures');
+  try {
+    const data = await notionQuery(DB_FACTURES, 5);
+    const rows = data.results || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">Aucune facture.</div>'; return; }
+    const titleProp = Object.keys(rows[0].properties).find(c => rows[0].properties[c].type === 'title');
+    const statusProp = Object.keys(rows[0].properties).find(c => /statut|état/i.test(c));
+    const mntProp = Object.keys(rows[0].properties).find(c => /montant|total|ht/i.test(c));
+    el.innerHTML = `<table style="width:100%">
+      <thead><tr><th>Nom</th>${mntProp?'<th>Montant</th>':''}${statusProp?'<th>Statut</th>':''}</tr></thead>
+      <tbody>${rows.map(r => {
+        const p = r.properties;
+        const nom = titleProp ? getText(p[titleProp]) : '—';
+        const mnt = mntProp ? getText(p[mntProp]) : null;
+        const stat = statusProp ? getText(p[statusProp]) : null;
+        return `<tr>
+          <td>${nom}</td>
+          ${mntProp ? `<td class="mono">${typeof mnt==='number'?fmt(mnt):(mnt||'—')}</td>` : ''}
+          ${statusProp ? `<td>${statusBadge(stat)}</td>` : ''}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+    document.getElementById('kpi-factures').textContent = rows.length;
+    document.getElementById('count-factures').textContent = rows.length;
+  } catch(e) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur</strong>${e.message}</div>`;
+  }
+}
+
+async function loadAll() {
+  document.getElementById('dash-date').textContent = 'Sync : ' + new Date().toLocaleTimeString('fr-FR');
+  await Promise.all([loadDashDevis(), loadDashFactures(), loadChantiers()]);
+}
+
+window.onload = () => {
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  loadAll();
+};
+</script>
+</body>
+</html>
