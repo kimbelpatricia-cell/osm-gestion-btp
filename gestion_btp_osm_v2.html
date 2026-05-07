@@ -299,11 +299,16 @@ function buildTable(rows, tbodyId, maxCols = 7) {
   const allCols = Object.keys(rows[0].properties);
   const skipTypes = ['relation','rollup','formula','files','people','created_by','last_edited_by'];
   const FACTURES_COLS = ['N° Facture','CHANTIERS','DEVIS','Date Facture','Montant HT','Montant TTC','Statut','% Avancement cumulé'];
+  const DEVIS_COLS = ['N° Devis','Total TTC','Client','CHANTIERS','Date du Devis','Total HT','Statut'];
   let cols;
   if (tbodyId === 'factures-tbody') {
     cols = FACTURES_COLS.filter(c => allCols.includes(c));
     const remaining = allCols.filter(c => !FACTURES_COLS.includes(c) && !skipTypes.includes(rows[0].properties[c]?.type));
     cols = [...cols, ...remaining].slice(0, 8);
+  } else if (tbodyId === 'devis-tbody') {
+    cols = DEVIS_COLS.filter(c => allCols.includes(c));
+    const remaining = allCols.filter(c => !DEVIS_COLS.includes(c) && !skipTypes.includes(rows[0].properties[c]?.type));
+    cols = [...cols, ...remaining].slice(0, 7);
   } else {
     let allFiltered = allCols.filter(c => !skipTypes.includes(rows[0].properties[c].type));
     const titleCol = allFiltered.find(c => rows[0].properties[c].type === 'title');
@@ -343,13 +348,21 @@ async function loadDevis() {
   try {
     const data = await notionQuery(DB_DEVIS);
     const rows = data.results || [];
+    const chantierMap = await resolveRelations(rows, 'CHANTIERS');
+    rows.forEach(r => {
+      const prop = r.properties['CHANTIERS'];
+      if (prop?.type === 'relation' && prop.relation.length > 0) {
+        const noms = prop.relation.map(rel => chantierMap[rel.id] || '—').join(', ');
+        r.properties['CHANTIERS'] = { type: 'rich_text', rich_text: [{ plain_text: noms }] };
+      }
+    });
     el.innerHTML = buildTable(rows, 'devis-tbody');
     document.getElementById('kpi-devis').textContent = rows.length;
     document.getElementById('kpi-devis-sub').textContent = rows.length + ' devis au total';
     document.getElementById('count-devis').textContent = rows.length;
-    const acc = rows.filter(r => Object.values(r.properties).some(p => /accept/i.test(getText(p))));
+    const acc = rows.filter(r => Object.values(r.properties).some(p => /signé/i.test(getText(p))));
     document.getElementById('kpi-acceptes').textContent = acc.length;
-    document.getElementById('kpi-acceptes-sub').textContent = acc.length + ' acceptés';
+    document.getElementById('kpi-acceptes-sub').textContent = acc.length + ' signés';
   } catch(e) {
     el.innerHTML = `<div class="error-box"><strong>Erreur de connexion</strong>${e.message}</div>`;
   }
